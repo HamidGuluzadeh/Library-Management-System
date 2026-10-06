@@ -21,6 +21,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -59,7 +61,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         if (transactionRepository.existsByUserIdAndBookIdAndStatus(userEntity.getId(), bookEntity.getId(),
                 BorrowStatus.BORROWED)) {
-            throw new BusinessException("User has already borrowed book ant not returned it yet!")
+            throw new BusinessException("User has already borrowed book and not returned it yet!");
         }
 
         bookEntity.setAvailableCopies(bookEntity.getAvailableCopies() - 1);
@@ -78,4 +80,68 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionMapper.mapEntityToResponse(savedTransactionEntity);
     }
 
+    @Override
+    @Transactional
+    public TransactionResponse returnBook(String transactionId) {
+        TransactionEntity transactionEntity = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found!"));
+
+        if (transactionEntity.getStatus() == BorrowStatus.RETURNED) {
+            throw new BusinessException("Book has already been returned!");
+        }
+
+        transactionEntity.setReturnDate(LocalDate.now());
+        transactionEntity.setStatus(BorrowStatus.RETURNED);
+
+        BookEntity bookEntity = transactionEntity.getBook();
+        bookEntity.setAvailableCopies(bookEntity.getAvailableCopies() + 1);
+        bookRepository.save(bookEntity);
+
+        UserEntity userEntity = transactionEntity.getUser();
+
+        if (userEntity.getStatus() == UserStatus.SUSPENDED &&
+                transactionRepository.hasOverdueBooks(userEntity.getId(), LocalDate.now())) {
+            userEntity.setStatus(UserStatus.ACTIVE);
+            userRepository.save(userEntity);
+        }
+
+        TransactionEntity savedTransactionEntity = transactionRepository.save(transactionEntity);
+
+        return transactionMapper.mapEntityToResponse(savedTransactionEntity);
+    }
+
+    @Override
+    @Transactional
+    public List<TransactionResponse> getActiveBorrowsByUser(String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found!");
+        }
+
+        List<TransactionEntity> transactionEntities =
+                transactionRepository.findByUserIdAndStatus(userId, BorrowStatus.BORROWED);
+
+        List<TransactionResponse> transactionResponseList = new ArrayList<>();
+
+        for (TransactionEntity transactionEntity : transactionEntities) {
+            TransactionResponse transactionResponse = transactionMapper.mapEntityToResponse(transactionEntity);
+            transactionResponseList.add(transactionResponse);
+        }
+
+        return transactionResponseList;
+    }
+
+    @Override
+    public List<TransactionResponse> getOverdueTransactions() {
+        List<TransactionEntity> transactionEntities =
+                transactionRepository.findAllOverdueTransactions(LocalDate.now());
+
+        List<TransactionResponse> transactionResponseList = new ArrayList<>();
+
+        for (TransactionEntity transactionEntity : transactionEntities) {
+            TransactionResponse transactionResponse = transactionMapper.mapEntityToResponse(transactionEntity);
+            transactionResponseList.add(transactionResponse);
+        }
+
+        return transactionResponseList;
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<TransactionEntity, String> {
@@ -17,5 +18,10 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     boolean hasOverdueBooks(@Param("userId") String userId, @Param("today") LocalDate today);
 
     boolean existsByUserIdAndBookIdAndStatus(String userId, String bookId, BorrowStatus status);
+
+    List<TransactionEntity> findByUserIdAndStatus(String userId, BorrowStatus status);
+
+    @Query("SELECT b FROM TransactionEntity b WHERE b.status = 'BORROWED' AND b.dueDate < :today")
+    List<TransactionEntity> findAllOverdueTransactions(@Param("today") LocalDate today);
 
 }
