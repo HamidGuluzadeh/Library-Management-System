@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +74,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .issueDate(LocalDate.now())
                 .dueDate(LocalDate.now().plusDays(DEFAULT_BORROW_DAYS))
                 .status(BorrowStatus.BORROWED)
+                .createdAt(Instant.now())
                 .build();
 
         TransactionEntity savedTransactionEntity = transactionRepository.save(transactionEntity);

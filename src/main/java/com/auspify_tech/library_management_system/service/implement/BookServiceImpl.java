@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Objects;
 
 @Service
@@ -63,6 +64,8 @@ public class BookServiceImpl implements BookService {
         }
 
         BookEntity bookEntity = bookMapper.mapRequestToEntity(request);
+        bookEntity.setCreatedAt(Instant.now());
+
         BookEntity savedBookEntity = bookRepository.save(bookEntity);
 
         return bookMapper.mapEntityToResponse(savedBookEntity);
@@ -79,6 +82,8 @@ public class BookServiceImpl implements BookService {
         }
 
         bookMapper.updateEntityFromRequest(request, bookEntity);
+        bookEntity.setUpdatedAt(Instant.now());
+
         BookEntity savedBookEntity = bookRepository.save(bookEntity);
 
         return bookMapper.mapEntityToResponse(savedBookEntity);

@@ -10,12 +10,19 @@ import com.auspify_tech.library_management_system.model.UserStatus;
 import com.auspify_tech.library_management_system.repository.UserRepository;
 import com.auspify_tech.library_management_system.service.UserService;
 import jakarta.transaction.Transactional;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     UserMapper userMapper;
@@ -50,6 +57,7 @@ public class UserServiceImpl implements UserService {
 
         UserEntity userEntity = userMapper.mapRequestToEntity(request);
         userEntity.setStatus(UserStatus.ACTIVE);
+        userEntity.setCreatedAt(Instant.now());
 
         UserEntity savedUserEntity = userRepository.save(userEntity);
 
@@ -71,6 +79,7 @@ public class UserServiceImpl implements UserService {
         }
 
         userMapper.updateEntityFromRequest(request, userEntity);
+        userEntity.setUpdatedAt(Instant.now());
 
         UserEntity savedUserEntity = userRepository.save(userEntity);
 
